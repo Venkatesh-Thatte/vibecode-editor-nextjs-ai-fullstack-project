@@ -71,8 +71,8 @@ interface FileExplorerState {
 //     saveTemplateData: (data: TemplateFolder) => Promise<void>
 //   ) => Promise<void>;
   
-//   updateFileContent: (fileId: string, content: string) => void;
-// }
+  updateFileContent: (fileId: string, content: string) => void;
+}
 
 // @ts-ignore
 export const useFileExplorer = create<FileExplorerState>((set, get) => ({
