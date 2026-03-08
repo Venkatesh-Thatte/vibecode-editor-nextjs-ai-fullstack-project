@@ -1,17 +1,36 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import PlaygroundEditor from "@/modules/playground/components/playground-editor";
 import { TemplateFileTree } from "@/modules/playground/components/playground-explorer";
 import { useFileExplorer } from "@/modules/playground/hooks/useFileExplorer";
 import { usePlayground } from "@/modules/playground/hooks/usePlayground";
 import { TemplateFile } from "@/modules/playground/lib/path-to-json";
+import { Bot, FileText, Save, Settings, X } from "lucide-react";
 import { useParams } from "next/navigation";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 const MainPlaygroundPage = () => {
   const { id } = useParams<{ id: string }>();
+  const [isPreviewVisible, setIsPreviewVisible] = useState(false);
+
   const { playgroundData, templateData, isLoading, error, saveTemplateData } =
     usePlayground(id);
 
@@ -22,6 +41,7 @@ const MainPlaygroundPage = () => {
     setOpenFiles,
     activeFileId,
     closeAllFiles,
+    closeFile,
     openFile,
     openFiles,
   } = useFileExplorer();
@@ -37,7 +57,7 @@ const MainPlaygroundPage = () => {
   }, [templateData, setTemplateData, openFiles.length]);
 
   // const activeFile = "sample.txt";
-  const activeFile = openFiles.find((file) => file.id === activeFileId)
+  const activeFile = openFiles.find((file) => file.id === activeFileId);
   const hasUnsavedChanges = openFiles.some((file) => file.hasUnsavedChanges);
 
   const handleFileSelect = (file: TemplateFile) => {
@@ -69,25 +89,24 @@ const MainPlaygroundPage = () => {
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
-          </header>
-          <div className="flex flex-1 items-center gap-2">
-            <div className="flex flex-col flex-1">
-              <h1 className="text-sm font-medium">
-                {playgroundData?.title || "Code Playground"}
-              </h1>
-              {/* <p className="text-xs text-muted-foreground">
+            <div className="flex flex-1 items-center gap-2">
+              <div className="flex flex-col flex-1">
+                <h1 className="text-sm font-medium">
+                  {playgroundData?.title || "Code Playground"}
+                </h1>
+                <p className="text-xs text-muted-foreground">
                   {openFiles.length} File(s) Open
                   {hasUnsavedChanges && " • Unsaved changes"}
-                </p> */}
-            </div>
+                </p>
+              </div>
 
-            {/* <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1">
                 <Tooltip>
                   <TooltipTrigger>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleSave()}
+                      onClick={() => {}}
                       disabled={!activeFile || !activeFile.hasUnsavedChanges}
                     >
                       <Save className="h-4 w-4" />
@@ -101,7 +120,7 @@ const MainPlaygroundPage = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={handleSaveAll}
+                      onClick={() => {}}
                       disabled={!hasUnsavedChanges}
                     >
                       <Save className="h-4 w-4" /> All
@@ -110,15 +129,16 @@ const MainPlaygroundPage = () => {
                   <TooltipContent>Save All (Ctrl+Shift+S)</TooltipContent>
                 </Tooltip>
 
-               <ToggleAI
+                {/* <ToggleAI
                 isEnabled={aiSuggestions.isEnabled}
                 onToggle={aiSuggestions.toggleEnabled}
                 suggestionLoading={aiSuggestions.isLoading}
-               />
+               /> */}
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button size="sm" variant="outline">
+                      <Bot className="size-4" />
                       <Settings className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -134,10 +154,11 @@ const MainPlaygroundPage = () => {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </div> */}
-          </div>
+              </div>
+            </div>
+          </header>
 
-          {/* <div className="h-[calc(100vh-4rem)]">
+          <div className="h-[calc(100vh-4rem)]">
             {openFiles.length > 0 ? (
               <div className="h-full flex flex-col">
                 <div className="border-b bg-muted/30">
@@ -197,24 +218,25 @@ const MainPlaygroundPage = () => {
                       <PlaygroundEditor
                         activeFile={activeFile}
                         content={activeFile?.content || ""}
-                        onContentChange={(value) => 
-                          activeFileId && updateFileContent(activeFileId , value)
-                        }
-                        suggestion={aiSuggestions.suggestion}
-                        suggestionLoading={aiSuggestions.isLoading}
-                        suggestionPosition={aiSuggestions.position}
-                        onAcceptSuggestion={(editor , monaco)=>aiSuggestions.acceptSuggestion(editor , monaco)}
+                        onContentChange={() => {}}
+                        // onContentChange={(value) =>
+                        //   activeFileId && updateFileContent(activeFileId , value)
+                        // }
+                        // suggestion={aiSuggestions.suggestion}
+                        // suggestionLoading={aiSuggestions.isLoading}
+                        // suggestionPosition={aiSuggestions.position}
+                        // onAcceptSuggestion={(editor , monaco)=>aiSuggestions.acceptSuggestion(editor , monaco)}
 
-                          onRejectSuggestion={(editor) =>
-                          aiSuggestions.rejectSuggestion(editor)
-                        }
-                        onTriggerSuggestion={(type, editor) =>
-                          aiSuggestions.fetchSuggestion(type, editor)
-                        }
+                        //   onRejectSuggestion={(editor) =>
+                        //   aiSuggestions.rejectSuggestion(editor)
+                        // }
+                        // onTriggerSuggestion={(type, editor) =>
+                        //   aiSuggestions.fetchSuggestion(type, editor)
+                        // }
                       />
                     </ResizablePanel>
 
-                    {isPreviewVisible && (
+                    {/* {isPreviewVisible && (
                       <>
                         <ResizableHandle />
                         <ResizablePanel defaultSize={50}>
@@ -229,7 +251,7 @@ const MainPlaygroundPage = () => {
                           />
                         </ResizablePanel>
                       </>
-                    )}
+                    )} */}
                   </ResizablePanelGroup>
                 </div>
               </div>
@@ -244,7 +266,7 @@ const MainPlaygroundPage = () => {
                 </div>
               </div>
             )}
-          </div> */}
+          </div>
         </SidebarInset>
       </>
     </TooltipProvider>
