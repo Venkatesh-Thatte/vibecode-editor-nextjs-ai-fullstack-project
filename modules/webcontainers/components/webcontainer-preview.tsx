@@ -6,7 +6,7 @@ import { CheckCircle, Loader2, XCircle } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import { transformToWebContainerFormat } from "../hooks/transformer";
-
+import TerminalComponent from "./terminal";
 
 interface WebContainerPreviewProps {
   templateData: TemplateFolder;
@@ -41,6 +41,25 @@ const WebContainerPreview = ({
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [isSetupInProgress, setIsSetupInProgress] = useState(false);
 
+  const terminalRef = useRef<any>(null);
+
+  // Reset setup state when forceResetup changes
+  useEffect(() => {
+    if (forceResetup) {
+      setIsSetupComplete(false);
+      setIsSetupInProgress(false);
+      setPreviewUrl("");
+      setCurrentStep(0);
+      setLoadingState({
+        transforming: false,
+        mounting: false,
+        installing: false,
+        starting: false,
+        ready: false,
+      });
+    }
+  }, [forceResetup]);
+
   useEffect(() => {
     async function setupContainer() {
       if (!instance || isSetupComplete || isSetupInProgress) return;
@@ -57,18 +76,18 @@ const WebContainerPreview = ({
 
           if (packageJsonExists) {
             // Files are already mounted, just reconnect to existing server
-            // if (terminalRef.current?.writeToTerminal) {
-            //   terminalRef.current.writeToTerminal(
-            //     "🔄 Reconnecting to existing WebContainer session...\r\n",
-            //   );
-            // }
+            if (terminalRef.current?.writeToTerminal) {
+              terminalRef.current.writeToTerminal(
+                "🔄 Reconnecting to existing WebContainer session...\r\n",
+              );
+            }
 
             instance.on("server-ready", (port: number, url: string) => {
-            //   if (terminalRef.current?.writeToTerminal) {
-            //     terminalRef.current.writeToTerminal(
-            //       `🌐 Reconnected to server at ${url}\r\n`,
-            //     );
-            //   }
+              if (terminalRef.current?.writeToTerminal) {
+                terminalRef.current.writeToTerminal(
+                  `🌐 Reconnected to server at ${url}\r\n`,
+                );
+              }
 
               setPreviewUrl(url);
               setLoadingState((prev) => ({
@@ -82,19 +101,17 @@ const WebContainerPreview = ({
             setLoadingState((prev) => ({ ...prev, starting: true }));
             return;
           }
-        } catch (error) {
-
-        }
+        } catch (error) {}
 
         // Step-1 transform data
         setLoadingState((prev) => ({ ...prev, transforming: true }));
         setCurrentStep(1);
         // Write to terminal
-        // if (terminalRef.current?.writeToTerminal) {
-        //   terminalRef.current.writeToTerminal(
-        //     "🔄 Transforming template data...\r\n",
-        //   );
-        // }
+        if (terminalRef.current?.writeToTerminal) {
+          terminalRef.current.writeToTerminal(
+            "🔄 Transforming template data...\r\n",
+          );
+        }
 
         // @ts-ignore
         const files = transformToWebContainerFormat(templateData);
@@ -107,19 +124,19 @@ const WebContainerPreview = ({
 
         //  Step-2 Mount Files
 
-        // if (terminalRef.current?.writeToTerminal) {
-        //   terminalRef.current.writeToTerminal(
-        //     "📁 Mounting files to WebContainer...\r\n",
-        //   );
-        // }
+        if (terminalRef.current?.writeToTerminal) {
+          terminalRef.current.writeToTerminal(
+            "📁 Mounting files to WebContainer...\r\n",
+          );
+        }
 
         await instance.mount(files);
 
-        // if (terminalRef.current?.writeToTerminal) {
-        //   terminalRef.current.writeToTerminal(
-        //     "✅ Files mounted successfully\r\n",
-        //   );
-        // }
+        if (terminalRef.current?.writeToTerminal) {
+          terminalRef.current.writeToTerminal(
+            "✅ Files mounted successfully\r\n",
+          );
+        }
         setLoadingState((prev) => ({
           ...prev,
           mounting: false,
@@ -129,20 +146,20 @@ const WebContainerPreview = ({
 
         // Step-3 Install dependencies
 
-        // if (terminalRef.current?.writeToTerminal) {
-        //   terminalRef.current.writeToTerminal(
-        //     "📦 Installing dependencies...\r\n",
-        //   );
-        // }
+        if (terminalRef.current?.writeToTerminal) {
+          terminalRef.current.writeToTerminal(
+            "📦 Installing dependencies...\r\n",
+          );
+        }
 
         const installProcess = await instance.spawn("npm", ["install"]);
 
         installProcess.output.pipeTo(
           new WritableStream({
             write(data) {
-            //   if (terminalRef.current?.writeToTerminal) {
-            //     terminalRef.current.writeToTerminal(data);
-            //   }
+                if (terminalRef.current?.writeToTerminal) {
+                  terminalRef.current.writeToTerminal(data);
+                }
             },
           }),
         );
@@ -155,11 +172,11 @@ const WebContainerPreview = ({
           );
         }
 
-        // if (terminalRef.current?.writeToTerminal) {
-        //   terminalRef.current.writeToTerminal(
-        //     "✅ Dependencies installed successfully\r\n",
-        //   );
-        // }
+        if (terminalRef.current?.writeToTerminal) {
+          terminalRef.current.writeToTerminal(
+            "✅ Dependencies installed successfully\r\n",
+          );
+        }
 
         setLoadingState((prev) => ({
           ...prev,
@@ -170,20 +187,20 @@ const WebContainerPreview = ({
 
         // STEP-4 Start The Server
 
-        // if (terminalRef.current?.writeToTerminal) {
-        //   terminalRef.current.writeToTerminal(
-        //     "🚀 Starting development server...\r\n",
-        //   );
-        // }
+        if (terminalRef.current?.writeToTerminal) {
+          terminalRef.current.writeToTerminal(
+            "🚀 Starting development server...\r\n",
+          );
+        }
 
         const startProcess = await instance.spawn("npm", ["run", "start"]);
 
         instance.on("server-ready", (port: number, url: string) => {
-        //   if (terminalRef.current?.writeToTerminal) {
-        //     terminalRef.current.writeToTerminal(
-        //       `🌐 Server ready at ${url}\r\n`,
-        //     );
-        //   }
+            if (terminalRef.current?.writeToTerminal) {
+              terminalRef.current.writeToTerminal(
+                `🌐 Server ready at ${url}\r\n`,
+              );
+            }
           setPreviewUrl(url);
           setLoadingState((prev) => ({
             ...prev,
@@ -198,18 +215,18 @@ const WebContainerPreview = ({
         startProcess.output.pipeTo(
           new WritableStream({
             write(data) {
-            //   if (terminalRef.current?.writeToTerminal) {
-            //     terminalRef.current.writeToTerminal(data);
-            //   }
+                if (terminalRef.current?.writeToTerminal) {
+                  terminalRef.current.writeToTerminal(data);
+                }
             },
           }),
         );
       } catch (err) {
         console.error("Error setting up container:", err);
         const errorMessage = err instanceof Error ? err.message : String(err);
-        // if (terminalRef.current?.writeToTerminal) {
-        //   terminalRef.current.writeToTerminal(`❌ Error: ${errorMessage}\r\n`);
-        // }
+        if (terminalRef.current?.writeToTerminal) {
+          terminalRef.current.writeToTerminal(`❌ Error: ${errorMessage}\r\n`);
+        }
         setSetupError(errorMessage);
         setIsSetupInProgress(false);
         setLoadingState({
@@ -225,8 +242,6 @@ const WebContainerPreview = ({
     setupContainer();
   }, [instance, templateData, isSetupComplete, isSetupInProgress]);
 
-
-
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -241,7 +256,7 @@ const WebContainerPreview = ({
     );
   }
 
-if (error || setupError) {
+  if (error || setupError) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-6 rounded-lg max-w-md">
@@ -275,8 +290,8 @@ if (error || setupError) {
           isComplete
             ? "text-green-600"
             : isActive
-            ? "text-blue-600"
-            : "text-gray-500"
+              ? "text-blue-600"
+              : "text-gray-500"
         }`}
       >
         {label}
@@ -285,7 +300,7 @@ if (error || setupError) {
   };
 
   //   const terminalRef = useRef<any>(null);
-  
+
   return (
     <div className="h-full w-full flex flex-col">
       {!previewUrl ? (
@@ -318,12 +333,12 @@ if (error || setupError) {
 
           {/* Terminal */}
           <div className="flex-1 p-4">
-            {/* <TerminalComponent
+            <TerminalComponent
               ref={terminalRef}
               webContainerInstance={instance}
               theme="dark"
               className="h-full"
-            /> */}
+            />
           </div>
         </div>
       ) : (
@@ -336,18 +351,18 @@ if (error || setupError) {
             />
           </div>
 
-          {/* <div className="h-64 border-t">
+          <div className="h-64 border-t">
             <TerminalComponent
               ref={terminalRef}
               webContainerInstance={instance}
               theme="dark"
               className="h-full"
             />
-          </div> */}
+          </div>
         </div>
       )}
     </div>
-  )
+  );
 };
 
 export default WebContainerPreview;
