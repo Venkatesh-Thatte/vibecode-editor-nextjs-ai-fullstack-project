@@ -26,13 +26,25 @@ import LoadingStep from "@/modules/playground/components/loader";
 import PlaygroundEditor from "@/modules/playground/components/playground-editor";
 import { TemplateFileTree } from "@/modules/playground/components/playground-explorer";
 import ToggleAI from "@/modules/playground/components/toggle-ai";
+import { useAISuggestions } from "@/modules/playground/hooks/useAISuggestion";
 import { useFileExplorer } from "@/modules/playground/hooks/useFileExplorer";
 import { usePlayground } from "@/modules/playground/hooks/usePlayground";
 import { findFilePath } from "@/modules/playground/lib";
-import { TemplateFile, TemplateFolder } from "@/modules/playground/lib/path-to-json";
+import {
+  TemplateFile,
+  TemplateFolder,
+} from "@/modules/playground/lib/path-to-json";
 import WebContainerPreview from "@/modules/webcontainers/components/webcontainer-preview";
 import { useWebContainer } from "@/modules/webcontainers/hooks/useWebContainer";
-import { AlertCircle, Bot, FileText, FolderOpen, Save, Settings, X } from "lucide-react";
+import {
+  AlertCircle,
+  Bot,
+  FileText,
+  FolderOpen,
+  Save,
+  Settings,
+  X,
+} from "lucide-react";
 import { useParams } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -44,6 +56,7 @@ const MainPlaygroundPage = () => {
   const { playgroundData, templateData, isLoading, error, saveTemplateData } =
     usePlayground(id);
 
+  const aiSuggestions = useAISuggestions();
   const {
     setTemplateData,
     setActiveFileId,
@@ -60,7 +73,7 @@ const MainPlaygroundPage = () => {
     handleDeleteFolder,
     handleRenameFile,
     handleRenameFolder,
-    updateFileContent
+    updateFileContent,
   } = useFileExplorer();
 
   const {
@@ -70,10 +83,9 @@ const MainPlaygroundPage = () => {
     instance,
     writeFileSync,
     //@ ts-ignore
-  } = useWebContainer({ templateData});
+  } = useWebContainer({ templateData });
 
   const lastSyncedContent = useRef<Map<string, string>>(new Map());
-
 
   useEffect(() => {
     setPlaygroundId(id);
@@ -85,19 +97,19 @@ const MainPlaygroundPage = () => {
     }
   }, [templateData, setTemplateData, openFiles.length]);
 
-const wrappedHandleAddFile = useCallback(
+  const wrappedHandleAddFile = useCallback(
     (newFile: TemplateFile, parentPath: string) => {
       return handleAddFile(
         newFile,
         parentPath,
         writeFileSync!,
         instance,
-        saveTemplateData
+        saveTemplateData,
       );
     },
-    [handleAddFile, writeFileSync, instance, saveTemplateData]
+    [handleAddFile, writeFileSync, instance, saveTemplateData],
   );
-  
+
   const wrappedHandleAddFolder = useCallback(
     (newFolder: TemplateFolder, parentPath: string) => {
       return handleAddFolder(newFolder, parentPath, instance, saveTemplateData);
@@ -105,20 +117,18 @@ const wrappedHandleAddFile = useCallback(
     [handleAddFolder, instance, saveTemplateData],
   );
 
-  
-
   const wrappedHandleDeleteFile = useCallback(
     (file: TemplateFile, parentPath: string) => {
       return handleDeleteFile(file, parentPath, saveTemplateData);
     },
-    [handleDeleteFile, saveTemplateData]
+    [handleDeleteFile, saveTemplateData],
   );
 
   const wrappedHandleDeleteFolder = useCallback(
     (folder: TemplateFolder, parentPath: string) => {
       return handleDeleteFolder(folder, parentPath, saveTemplateData);
     },
-    [handleDeleteFolder, saveTemplateData]
+    [handleDeleteFolder, saveTemplateData],
   );
 
   const wrappedHandleRenameFile = useCallback(
@@ -126,17 +136,17 @@ const wrappedHandleAddFile = useCallback(
       file: TemplateFile,
       newFilename: string,
       newExtension: string,
-      parentPath: string
+      parentPath: string,
     ) => {
       return handleRenameFile(
         file,
         newFilename,
         newExtension,
         parentPath,
-        saveTemplateData
+        saveTemplateData,
       );
     },
-    [handleRenameFile, saveTemplateData]
+    [handleRenameFile, saveTemplateData],
   );
 
   const wrappedHandleRenameFolder = useCallback(
@@ -145,10 +155,10 @@ const wrappedHandleAddFile = useCallback(
         folder,
         newFolderName,
         parentPath,
-        saveTemplateData
+        saveTemplateData,
       );
     },
-    [handleRenameFolder, saveTemplateData]
+    [handleRenameFolder, saveTemplateData],
   );
   // const activeFile = "sample.txt";
   const activeFile = openFiles.find((file) => file.id === activeFileId);
@@ -158,7 +168,7 @@ const wrappedHandleAddFile = useCallback(
     openFile(file);
   };
 
-const handleSave = useCallback(
+  const handleSave = useCallback(
     async (fileId?: string) => {
       const targetFileId = fileId || activeFileId;
       if (!targetFileId) return;
@@ -168,24 +178,24 @@ const handleSave = useCallback(
       if (!fileToSave) return;
 
       const latestTemplateData = useFileExplorer.getState().templateData;
-      if (!latestTemplateData) return
+      if (!latestTemplateData) return;
 
       try {
-            const filePath = findFilePath(fileToSave, latestTemplateData);
+        const filePath = findFilePath(fileToSave, latestTemplateData);
         if (!filePath) {
           toast.error(
-            `Could not find path for file: ${fileToSave.filename}.${fileToSave.fileExtension}`
+            `Could not find path for file: ${fileToSave.filename}.${fileToSave.fileExtension}`,
           );
           return;
         }
 
-   const updatedTemplateData = JSON.parse(
-          JSON.stringify(latestTemplateData)
+        const updatedTemplateData = JSON.parse(
+          JSON.stringify(latestTemplateData),
         );
 
         // @ts-ignore
-          const updateFileContent = (items: any[]) =>
-            // @ts-ignore
+        const updateFileContent = (items: any[]) =>
+          // @ts-ignore
           items.map((item) => {
             if ("folderName" in item) {
               return { ...item, items: updateFileContent(item.items) };
@@ -198,10 +208,10 @@ const handleSave = useCallback(
             return item;
           });
         updatedTemplateData.items = updateFileContent(
-          updatedTemplateData.items
+          updatedTemplateData.items,
         );
 
-          // Sync with WebContainer
+        // Sync with WebContainer
         if (writeFileSync) {
           await writeFileSync(filePath, fileToSave.content);
           lastSyncedContent.current.set(fileToSave.id, fileToSave.content);
@@ -210,9 +220,9 @@ const handleSave = useCallback(
           }
         }
 
-           const newTemplateData = await saveTemplateData(updatedTemplateData);
+        const newTemplateData = await saveTemplateData(updatedTemplateData);
         setTemplateData(newTemplateData || updatedTemplateData);
-// Update open files
+        // Update open files
         const updatedOpenFiles = openFiles.map((f) =>
           f.id === targetFileId
             ? {
@@ -221,17 +231,17 @@ const handleSave = useCallback(
                 originalContent: fileToSave.content,
                 hasUnsavedChanges: false,
               }
-            : f
+            : f,
         );
         setOpenFiles(updatedOpenFiles);
 
-    toast.success(
-          `Saved ${fileToSave.filename}.${fileToSave.fileExtension}`
+        toast.success(
+          `Saved ${fileToSave.filename}.${fileToSave.fileExtension}`,
         );
       } catch (error) {
-         console.error("Error saving file:", error);
+        console.error("Error saving file:", error);
         toast.error(
-          `Failed to save ${fileToSave.filename}.${fileToSave.fileExtension}`
+          `Failed to save ${fileToSave.filename}.${fileToSave.fileExtension}`,
         );
         throw error;
       }
@@ -244,7 +254,7 @@ const handleSave = useCallback(
       saveTemplateData,
       setTemplateData,
       setOpenFiles,
-    ]
+    ],
   );
 
   const handleSaveAll = async () => {
@@ -263,16 +273,16 @@ const handleSave = useCallback(
     }
   };
 
- useEffect(()=>{
-    const handleKeyDown = (e:KeyboardEvent)=>{
-      if(e.ctrlKey && e.key === "s"){
-        e.preventDefault()
-        handleSave()
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === "s") {
+        e.preventDefault();
+        handleSave();
       }
-    }
-     window.addEventListener("keydown", handleKeyDown);
-     return () => window.removeEventListener("keydown", handleKeyDown);
-  },[handleSave]);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleSave]);
 
   if (error) {
     return (
@@ -289,7 +299,7 @@ const handleSave = useCallback(
     );
   }
 
-// Loading state
+  // Loading state
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] p-4">
@@ -317,7 +327,7 @@ const handleSave = useCallback(
 
   // No template data
 
-   if (!templateData) {
+  if (!templateData) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] p-4">
         <FolderOpen className="h-12 w-12 text-amber-500 mb-4" />
@@ -391,10 +401,10 @@ const handleSave = useCallback(
                 </Tooltip>
 
                 <ToggleAI
-                isEnabled={false}
-                onToggle={() => {}}
-                suggestionLoading={true}
-               />
+                  isEnabled={aiSuggestions.isEnabled}
+                  onToggle={aiSuggestions.toggleEnabled}
+                  suggestionLoading={aiSuggestions.isLoading}
+                />
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -480,19 +490,19 @@ const handleSave = useCallback(
                         activeFile={activeFile}
                         content={activeFile?.content || ""}
                         onContentChange={(value) =>
-                          activeFileId && updateFileContent(activeFileId , value)
+                          activeFileId && updateFileContent(activeFileId, value)
                         }
-                        // suggestion={aiSuggestions.suggestion}
-                        // suggestionLoading={aiSuggestions.isLoading}
-                        // suggestionPosition={aiSuggestions.position}
-                        // onAcceptSuggestion={(editor , monaco)=>aiSuggestions.acceptSuggestion(editor , monaco)}
+                        suggestion={aiSuggestions.suggestion}
+                        suggestionLoading={aiSuggestions.isLoading}
+                        suggestionPosition={aiSuggestions.position}
+                        onAcceptSuggestion={(editor , monaco)=>aiSuggestions.acceptSuggestion(editor , monaco)}
 
-                        //   onRejectSuggestion={(editor) =>
-                        //   aiSuggestions.rejectSuggestion(editor)
-                        // }
-                        // onTriggerSuggestion={(type, editor) =>
-                        //   aiSuggestions.fetchSuggestion(type, editor)
-                        // }
+                          onRejectSuggestion={(editor) =>
+                          aiSuggestions.rejectSuggestion(editor)
+                        }
+                        onTriggerSuggestion={(type, editor) =>
+                          aiSuggestions.fetchSuggestion(type, editor)
+                        }
                       />
                     </ResizablePanel>
 
