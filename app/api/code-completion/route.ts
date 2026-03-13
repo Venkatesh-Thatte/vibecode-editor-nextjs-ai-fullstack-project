@@ -108,70 +108,55 @@ function analyzeCodeContext(
   };
 }
 
+
 function buildPrompt(context: CodeContext, suggestionType: string): string {
-  return `You are an expert code completion assistant. Generate a ${suggestionType} suggestion.
-
-Language: ${context.language}
-Framework: ${context.framework}
-
-Context:
-${context.beforeContext}
-${context.currentLine.substring(
-  0,
-  context.cursorPosition.column
-)}|CURSOR|${context.currentLine.substring(context.cursorPosition.column)}
-${context.afterContext}
-
-Analysis:
-- In Function: ${context.isInFunction}
-- In Class: ${context.isInClass}
-- After Comment: ${context.isAfterComment}
-- Incomplete Patterns: ${context.incompletePatterns.join(", ") || "None"}
-
-Instructions:
-1. Provide only the code that should be inserted at the cursor
-2. Maintain proper indentation and style
-3. Follow ${context.language} best practices
-4. Make the suggestion contextually appropriate
-
-Generate suggestion:`;
+  return `Complete this code, return only the completion:
+${context.beforeContext.split('\n').slice(-3).join('\n')}
+${context.currentLine.substring(0, context.cursorPosition.column)}`;
 }
-
 async function generateSuggestion(prompt: string): Promise<string> {
   try {
+    const controller = new AbortController();
+    // Timeout after 10 seconds
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
     const response = await fetch("http://localhost:11434/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
       body: JSON.stringify({
-        model: "gpt-oss:20b",
+        model: "gemma3:1b",
         prompt,
         stream: false,
-        option: {
-          temperature: 0.7,
-          max_tokens: 300,
+        options: {
+          temperature: 0.2,
+          num_predict: 30,  // limit output tokens = much faster
         },
       }),
     });
 
-       if (!response.ok) {
-      throw new Error(`AI service error: ${response.statusText}`)
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      throw new Error(`AI service error: ${response.statusText}`);
     }
 
-      const data = await response.json()
-    let suggestion = data.response
+    const data = await response.json();
+    let suggestion = data.response;
 
-     // Clean up the suggestion
     if (suggestion.includes("```")) {
-      const codeMatch = suggestion.match(/```[\w]*\n?([\s\S]*?)```/)
-      suggestion = codeMatch ? codeMatch[1].trim() : suggestion
+      const codeMatch = suggestion.match(/```[\w]*\n?([\s\S]*?)```/);
+      suggestion = codeMatch ? codeMatch[1].trim() : suggestion;
     }
 
-    return suggestion
+    return suggestion;
   } catch (error) {
-      console.error("AI generation error:", error)
-    return "// AI suggestion unavailable"
+    console.error("AI generation error:", error);
+    return "// AI suggestion unavailable";
   }
 }
+
+
 
 // Helper functions for code analysis
 function detectLanguage(content: string, fileName?: string): string {
