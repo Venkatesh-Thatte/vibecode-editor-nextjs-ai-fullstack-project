@@ -35,14 +35,14 @@ interface FileExplorerState {
     newFile: TemplateFile,
     parentPath: string,
     writeFileSync: (filePath: string, content: string) => Promise<void>,
-    instance: { fs?: { mkdir: (path: string, options?: { recursive?: boolean }) => Promise<void> } } | null | undefined,
+    instance: { fs?: { mkdir: (path: string, options?: { recursive?: false }) => Promise<void> } } | null | undefined,
     saveTemplateData: (data: TemplateFolder) => Promise<void>,
   ) => Promise<void>;
 
   handleAddFolder: (
     newFolder: TemplateFolder,
     parentPath: string,
-    instance: { fs?: { mkdir: (path: string, options?: { recursive?: boolean }) => Promise<void> } } | null | undefined,
+    instance: { fs?: { mkdir: (path: string, options?: { recursive?: false }) => Promise<void> } } | null | undefined,
     saveTemplateData: (data: TemplateFolder) => Promise<void>,
   ) => Promise<void>;
 
@@ -213,7 +213,16 @@ const fileExplorerStore: StateCreator<FileExplorerState> = (set, get) => ({
         const folderPath = parentPath
           ? `${parentPath}/${newFolder.folderName}`
           : newFolder.folderName;
-        await instance.fs.mkdir(folderPath, { recursive: true });
+        const parts = folderPath.split("/").filter(Boolean);
+        let currentPath = "";
+        for (const part of parts) {
+          currentPath += "/" + part;
+          try {
+            await instance.fs.mkdir(currentPath);
+          } catch {
+            // directory already exists, skip
+          }
+        }
       }
     } catch (err) {
       console.error("Error adding folder:", err);
