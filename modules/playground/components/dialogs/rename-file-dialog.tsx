@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import React from "react";
 
-
 interface RenameFileDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -29,20 +28,21 @@ function RenameFileDialog({
   currentFilename,
   currentExtension,
 }: RenameFileDialogProps) {
-  const [filename, setFilename] = React.useState(currentFilename);
-  const [extension, setExtension] = React.useState(currentExtension);
+  const [filename, setFilename] = React.useState(currentFilename ?? "");
+  const [extension, setExtension] = React.useState(currentExtension ?? "");
 
   React.useEffect(() => {
     if (isOpen) {
-      setFilename(currentFilename);
-      setExtension(currentExtension);
+      setFilename(currentFilename ?? "");
+      setExtension(currentExtension ?? "");
     }
   }, [isOpen, currentFilename, currentExtension]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (filename.trim()) {
-      onRename(filename.trim(), extension.trim() || currentExtension);
+    const trimmed = filename?.trim();
+    if (trimmed) {
+      onRename(trimmed, extension?.trim() || currentExtension || "");
     }
   };
 
@@ -83,7 +83,7 @@ function RenameFileDialog({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!filename.trim()}>
+            <Button type="submit" disabled={!filename?.trim()}>
               Rename
             </Button>
           </DialogFooter>

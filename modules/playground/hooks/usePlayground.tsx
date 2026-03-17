@@ -4,11 +4,8 @@ import { toast } from "sonner";
 import type { TemplateFolder } from "../lib/path-to-json";
 import { getPlaygroundById, SaveUpdatedCode } from "../actions";
 
-interface PlaygroundData {
-  id: string;
-    title?: string;
-  [key: string]: any;
-}
+// Derived directly from what getPlaygroundById returns
+type PlaygroundData = NonNullable<Awaited<ReturnType<typeof getPlaygroundById>>>;
 
 interface UsePlaygroundReturn {
   playgroundData: PlaygroundData | null;
@@ -20,9 +17,7 @@ interface UsePlaygroundReturn {
 }
 
 export const usePlayground = (id: string): UsePlaygroundReturn => {
-  const [playgroundData, setPlaygroundData] = useState<PlaygroundData | null>(
-    null,
-  );
+  const [playgroundData, setPlaygroundData] = useState<PlaygroundData | null>(null);
   const [templateData, setTemplateData] = useState<TemplateFolder | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,19 +31,18 @@ export const usePlayground = (id: string): UsePlaygroundReturn => {
 
       const data = await getPlaygroundById(id);
 
-      //   @ts-ignore
-      setPlaygroundData(data);
+      setPlaygroundData(data ?? null);
+
       const rawContent = data?.templateFiles?.[0]?.content;
 
       if (typeof rawContent === "string") {
         const parsedContent = JSON.parse(rawContent);
         setTemplateData(parsedContent);
-        toast.success("playground loaded successfully");
+        toast.success("Playground loaded successfully");
         return;
       }
 
-      // load template from api if not in saved content
-
+      // Load template from API if not in saved content
       const res = await fetch(`/api/template/${id}`);
 
       if (!res.ok) throw new Error(`Failed to load template: ${res.status}`);
@@ -69,8 +63,8 @@ export const usePlayground = (id: string): UsePlaygroundReturn => {
         );
       }
       toast.success("Template loaded successfully");
-    } catch (error) {
-      console.error("Error loading playground:", error);
+    } catch (err) {
+      console.error("Error loading playground:", err);
       setError("Failed to load playground data");
       toast.error("Failed to load playground data");
     } finally {
@@ -84,10 +78,10 @@ export const usePlayground = (id: string): UsePlaygroundReturn => {
         await SaveUpdatedCode(id, data);
         setTemplateData(data);
         toast.success("Changes saved successfully");
-      } catch (error) {
-        console.error("Error saving template data:", error);
+      } catch (err) {
+        console.error("Error saving template data:", err);
         toast.error("Failed to save changes");
-        throw error;
+        throw err;
       }
     },
     [id],

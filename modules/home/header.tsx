@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-// import { ThemeToggle } from "@/components/ui/toggle-theme";
 import UserButton from "../auth/components/user-button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
@@ -54,12 +53,7 @@ export function Header() {
                     >
                       Docs
                     </Link>
-                    {/* <Link
-                                            href="/pricing"
-                                            className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
-                                        >
-                                            Pricing
-                                        </Link> */}
+                    
                     <Link
                       href="https://codesnippetui.pro/templates?utm_source=codesnippetui.com&utm_medium=header"
                       target="_blank"

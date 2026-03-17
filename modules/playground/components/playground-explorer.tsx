@@ -48,19 +48,6 @@ import RenameFileDialog from "./dialogs/rename-file-dialog";
 import { DeleteDialog } from "./dialogs/delete-dialog";
 import { TemplateFile, TemplateFolder, TemplateItem } from "../lib/path-to-json";
 
-// interface TemplateFile {
-//   filename: string;
-//   fileExtension: string;
-//   content: string;
-// }
-
-
-// interface TemplateFolder {
-//   folderName: string;
-//   items: (TemplateFile | TemplateFolder)[];
-// }
-
-// type TemplateItem = TemplateFile | TemplateFolder;
 
 interface TemplateFileTreeProps {
   data: TemplateItem;

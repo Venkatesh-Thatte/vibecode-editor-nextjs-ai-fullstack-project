@@ -15,14 +15,10 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
   Bot,
-  Code,
   FileText,
-  Import,
   Loader2,
   Power,
   PowerOff,
-  Braces,
-  Variable,
 } from "lucide-react";
 import React from "react";
 import { cn } from "@/lib/utils";

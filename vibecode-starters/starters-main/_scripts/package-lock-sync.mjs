@@ -94,7 +94,6 @@ function checkPackageLockSync(directory, name) {
 
 function updatePackageLock(directory, name, force) {
   return new Promise((resolve, reject) => {
-    // we only write the `package-lock.json` if it does not exist or if the `--force` flag is set
     if (!force && fs.existsSync(path.join(directory, 'package-lock.json'))) {
       resolve();
 

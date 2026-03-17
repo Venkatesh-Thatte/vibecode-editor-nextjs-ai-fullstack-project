@@ -15,6 +15,28 @@ interface UseWebContaierReturn {
   destory: () => void;
 }
 
+// Module-level singleton — survives React StrictMode remounts
+let webContainerInstance: WebContainer | null = null;
+let bootPromise: Promise<WebContainer> | null = null;
+
+function getWebContainerInstance(): Promise<WebContainer> {
+  if (webContainerInstance) {
+    return Promise.resolve(webContainerInstance);
+  }
+  if (bootPromise) {
+    return bootPromise;
+  }
+  bootPromise = WebContainer.boot().then((instance) => {
+    webContainerInstance = instance;
+    return instance;
+  }).catch((err) => {
+    // Reset so it can be retried on next call
+    bootPromise = null;
+    throw err;
+  });
+  return bootPromise;
+}
+
 export const useWebContainer = ({
   templateData,
 }: UseWebContainerProps): UseWebContaierReturn => {
@@ -28,11 +50,11 @@ export const useWebContainer = ({
 
     async function initializeWebContainer() {
       try {
-        const webcontainerInstance = await WebContainer.boot();
+        const container = await getWebContainerInstance(); // ✅ singleton
 
         if (!mounted) return;
 
-        setInstance(webcontainerInstance);
+        setInstance(container);
         setIsLoading(false);
       } catch (error) {
         console.error("Failed to initialize WebContainer:", error);
@@ -51,9 +73,8 @@ export const useWebContainer = ({
 
     return () => {
       mounted = false;
-      if (instance) {
-        instance.teardown();
-      }
+      // Don't teardown here — the singleton should persist across remounts.
+      // Only teardown via the destroy() function when you truly want to clean up.
     };
   }, []);
 
@@ -68,7 +89,7 @@ export const useWebContainer = ({
         const folderPath = pathParts.slice(0, -1).join("/");
 
         if (folderPath) {
-          await instance.fs.mkdir(folderPath, { recursive: true }); // Create folder structure recursively
+          await instance.fs.mkdir(folderPath, { recursive: true });
         }
 
         await instance.fs.writeFile(path, content);
@@ -82,13 +103,16 @@ export const useWebContainer = ({
     [instance]
   );
 
-  const destory = useCallback(()=>{
-    if(instance){
-        instance.teardown()
-        setInstance(null);
-        setServerUrl(null)
+  const destory = useCallback(() => {
+    if (instance) {
+      instance.teardown();
+      // Reset the module-level singleton so it can be rebooted if needed
+      webContainerInstance = null;
+      bootPromise = null;
+      setInstance(null);
+      setServerUrl(null);
     }
-  },[instance])
+  }, [instance]);
 
-  return {serverUrl , isLoading , error , instance , writeFileSync , destory}
+  return { serverUrl, isLoading, error, instance, writeFileSync, destory };
 };

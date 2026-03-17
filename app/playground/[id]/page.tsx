@@ -82,7 +82,6 @@ const MainPlaygroundPage = () => {
     error: containerError,
     instance,
     writeFileSync,
-    //@ ts-ignore
   } = useWebContainer({ templateData });
 
   const lastSyncedContent = useRef<Map<string, string>>(new Map());
@@ -160,7 +159,7 @@ const MainPlaygroundPage = () => {
     },
     [handleRenameFolder, saveTemplateData],
   );
-  // const activeFile = "sample.txt";
+
   const activeFile = openFiles.find((file) => file.id === activeFileId);
   const hasUnsavedChanges = openFiles.some((file) => file.hasUnsavedChanges);
 
@@ -193,21 +192,27 @@ const MainPlaygroundPage = () => {
           JSON.stringify(latestTemplateData),
         );
 
-        // @ts-ignore
-        const updateFileContent = (items: any[]) =>
-          // @ts-ignore
+        const updateItemContent = (
+          items: Array<TemplateFile | TemplateFolder>,
+        ): Array<TemplateFile | TemplateFolder> =>
           items.map((item) => {
             if ("folderName" in item) {
-              return { ...item, items: updateFileContent(item.items) };
+              return {
+                ...item,
+                items: updateItemContent(
+                  item.items as Array<TemplateFile | TemplateFolder>,
+                ),
+              };
             } else if (
-              item.filename === fileToSave.filename &&
-              item.fileExtension === fileToSave.fileExtension
+              (item as TemplateFile).filename === fileToSave.filename &&
+              (item as TemplateFile).fileExtension === fileToSave.fileExtension
             ) {
               return { ...item, content: fileToSave.content };
             }
             return item;
           });
-        updatedTemplateData.items = updateFileContent(
+
+        updatedTemplateData.items = updateItemContent(
           updatedTemplateData.items,
         );
 
@@ -222,6 +227,7 @@ const MainPlaygroundPage = () => {
 
         const newTemplateData = await saveTemplateData(updatedTemplateData);
         setTemplateData(newTemplateData || updatedTemplateData);
+
         // Update open files
         const updatedOpenFiles = openFiles.map((f) =>
           f.id === targetFileId
@@ -238,12 +244,12 @@ const MainPlaygroundPage = () => {
         toast.success(
           `Saved ${fileToSave.filename}.${fileToSave.fileExtension}`,
         );
-      } catch (error) {
-        console.error("Error saving file:", error);
+      } catch (err) {
+        console.error("Error saving file:", err);
         toast.error(
           `Failed to save ${fileToSave.filename}.${fileToSave.fileExtension}`,
         );
-        throw error;
+        throw err;
       }
     },
     [
@@ -268,7 +274,8 @@ const MainPlaygroundPage = () => {
     try {
       await Promise.all(unsavedFiles.map((f) => handleSave(f.id)));
       toast.success(`Saved ${unsavedFiles.length} file(s)`);
-    } catch (error) {
+    } catch (err) {
+      console.error("Error saving all files:", err);
       toast.error("Failed to save some files");
     }
   };
@@ -299,7 +306,6 @@ const MainPlaygroundPage = () => {
     );
   }
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] p-4">
@@ -324,8 +330,6 @@ const MainPlaygroundPage = () => {
       </div>
     );
   }
-
-  // No template data
 
   if (!templateData) {
     return (
@@ -373,7 +377,7 @@ const MainPlaygroundPage = () => {
 
               <div className="flex items-center gap-1">
                 <Tooltip>
-                  <TooltipTrigger>
+                  <TooltipTrigger asChild>
                     <Button
                       size="sm"
                       variant="outline"
@@ -495,9 +499,10 @@ const MainPlaygroundPage = () => {
                         suggestion={aiSuggestions.suggestion}
                         suggestionLoading={aiSuggestions.isLoading}
                         suggestionPosition={aiSuggestions.position}
-                        onAcceptSuggestion={(editor , monaco)=>aiSuggestions.acceptSuggestion(editor , monaco)}
-
-                          onRejectSuggestion={(editor) =>
+                        onAcceptSuggestion={(editor, monaco) =>
+                          aiSuggestions.acceptSuggestion(editor, monaco)
+                        }
+                        onRejectSuggestion={(editor) =>
                           aiSuggestions.rejectSuggestion(editor)
                         }
                         onTriggerSuggestion={(type, editor) =>
