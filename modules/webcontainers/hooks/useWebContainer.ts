@@ -89,7 +89,7 @@ export const useWebContainer = ({
         const folderPath = pathParts.slice(0, -1).join("/");
 
         if (folderPath) {
-          await instance.fs.mkdir(folderPath, { recursive: true });
+          await instance.fs.mkdir(folderPath);
         }
 
         await instance.fs.writeFile(path, content);
